@@ -1,0 +1,6 @@
+class Person {
+    name: str;
+}
+fun greet(person: Person): unit {
+    print("Hello " + person.name + "!");
+}

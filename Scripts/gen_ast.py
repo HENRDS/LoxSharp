@@ -81,11 +81,6 @@ class AstBuilder:
 def build_expr() -> AstBuilder:
     builder = AstBuilder("LoxSharp.Parsing", "Expr")
     builder.using("System", "System.Collections.Generic", "LoxSharp.Lexing")
-    builder.add_node(
-        "Assignment",
-        Prop("Left", "Token"),
-        Prop("Value", "Expr")
-    )
     builder.add_node("Comma", Prop("Values", "List<Expr>"))
     builder.add_node(
         "Conditional",
@@ -107,7 +102,6 @@ def build_expr() -> AstBuilder:
     )
     builder.add_node(
         "Unary",
-        Prop("Left", "Expr"),
         Prop("Operator", "Token"),
         Prop("Right", "Expr")
     )

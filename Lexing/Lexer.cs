@@ -7,7 +7,8 @@ namespace LoxSharp.Lexing
     {
         public static readonly HashSet<string> Keywords = new() {
             "and", "break", "const", "class", "continue", "else", "enum",
-            "for", "fun", "if", "in", "not", "or", "return", "while" };
+            "false", "for", "fun", "if", "in", "not", "nil", "or", "return",
+            "shl", "shr", "true", "while" };
         private readonly SourceReader reader;
         public Lexer(SourceReader reader)
         {
@@ -68,7 +69,10 @@ namespace LoxSharp.Lexing
                 case '{': return EmitToken(TokenType.LeftBrace);
                 case '}': return EmitToken(TokenType.RightBrace);
                 case '+': return EmitToken(TokenType.Plus);
-                case '-': return EmitToken(TokenType.Minus);
+                case '-':
+                    if (reader.Match('>'))
+                        return EmitToken(TokenType.DashGreater);
+                    return EmitToken(TokenType.Minus);
                 case '*': return EmitToken(TokenType.Star);
                 case '/': return EmitToken(TokenType.Slash);
                 case '|': return EmitToken(TokenType.Pipe);

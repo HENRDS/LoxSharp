@@ -5,10 +5,12 @@ namespace LoxSharp.Lexing
         Invalid, NewLine, Whitespace,
         LeftParen, RightParen, LeftBracket, RightBracket, LeftBrace, RightBrace,
         Plus, Minus, Star, Slash, Ampersand, Pipe, Equal, Equal2, Less, Greater, LessEqual, GreaterEqual,
-        Tilde,  BangEqual, Comma, Colon, Semicolon, Dot,
+        Tilde,  BangEqual, Comma, Colon, Semicolon, Dot, DashGreater,
         StringLit, NumberLit, Identifier,
 
-        And, Break, Const, Class, Continue, Else, Enum, For, Fun, If, In, Not, Or, Return, While,
+        And, Break, Const, Class, Continue, Else, Enum, False, For, Fun, If, In, Not, Nil, Or, Return, Shl, Shr,
+        True, While,
+
         Eof
     }
     public class Token

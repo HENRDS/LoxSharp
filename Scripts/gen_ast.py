@@ -128,15 +128,14 @@ def build_expr() -> AstBuilder:
     return builder
 
 
-def parse_cli_args():
-    parser = ArgumentParser("gen_ast", description="Generates an AST")
-    parser.add_argument("tree", help="The name of the tree to generate")
-    return parser.parse_args()
-
-
 TREES = {
     "expr": Tree(build_expr, ROOT_D / "Parsing" / "Expr.cs")
 }
+
+def parse_cli_args():
+    parser = ArgumentParser("gen_ast", description="Generates an AST")
+    parser.add_argument("tree", choices=TREES.keys(), help="The name of the tree to generate")
+    return parser.parse_args()
 
 
 def main():

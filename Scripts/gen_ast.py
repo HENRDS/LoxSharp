@@ -117,12 +117,6 @@ def build_expr() -> AstBuilder:
         Prop("Name", "Token")
     )
     builder.add_node(
-        "Set",
-        Prop("Object", "Expr"),
-        Prop("Name", "Token"),
-        Prop("Value", "Expr")
-    )
-    builder.add_node(
         "Lambda",
         Prop("Keyword", "Token"),
         Prop("Parameters", "List<Token>"),

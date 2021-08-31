@@ -4,19 +4,19 @@ using ${using};
 
 namespace ${ast.namespace}
 {
-    internal interface I${ast.root_class}Visitor
+    public interface I${ast.root_class}Visitor
     {
         %for node in ast.nodes:
         public void Visit${node.name}(${ast.root_class}.${node.name} ${node.arg_name});
         %endfor
     }
-    internal interface I${ast.root_class}Visitor<T>
+    public interface I${ast.root_class}Visitor<T>
     {
         %for node in ast.nodes:
         public T Visit${node.name}(${ast.root_class}.${node.name} ${node.arg_name});
         %endfor
     }
-    internal abstract partial class ${ast.root_class}
+    public abstract partial class ${ast.root_class}
     {
 
         public abstract void Accept(I${ast.root_class}Visitor visitor);

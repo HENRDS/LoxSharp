@@ -56,6 +56,12 @@ namespace LoxSharp.Lexing
                 return EmitToken(Enum.Parse<TokenType>(reader.Lexeme, true));
             return EmitToken(TokenType.Identifier);
         }
+        private Token Comment()
+        {
+            while (reader.Current != '\n')
+                reader.Advance();
+            return EmitToken(TokenType.Comment);
+        }
         private Token NextToken()
         {
             char c = reader.Current;
@@ -82,8 +88,9 @@ namespace LoxSharp.Lexing
                 case ':': return EmitToken(TokenType.Colon);
                 case '.': return EmitToken(TokenType.Dot);
                 case ';': return EmitToken(TokenType.Semicolon);
+                case '#': return Comment();
                 case ' ':
-                    while (reader.Peek() == ' ')
+                    while (reader.Current == ' ')
                         reader.Advance();
                     return EmitToken(TokenType.Whitespace);
 
@@ -103,7 +110,6 @@ namespace LoxSharp.Lexing
                     else if (c.IsIdentifierStartChar())
                         return Identifier();
                     return EmitToken(TokenType.Invalid);
-
             }
         }
         public IEnumerable<Token> Lex()
@@ -111,10 +117,11 @@ namespace LoxSharp.Lexing
             while (!reader.IsAtEnd)
             {
                 var token = NextToken();
-                if (token.Type is TokenType.NewLine or TokenType.Whitespace)
+                if (token.Type is TokenType.NewLine or TokenType.Whitespace or TokenType.Comment)
                     continue;
                 yield return token;
             }
+            yield return EmitToken(TokenType.Eof);
         }
     }
 }

@@ -2,7 +2,7 @@ namespace LoxSharp.Lexing
 {
     public enum TokenType
     {
-        Invalid, NewLine, Whitespace,
+        Invalid, NewLine, Whitespace, Comment,
         LeftParen, RightParen, LeftBracket, RightBracket, LeftBrace, RightBrace,
         Plus, Minus, Star, Slash, Ampersand, Pipe, Equal, Equal2, Less, Greater, LessEqual, GreaterEqual,
         Tilde,  BangEqual, Comma, Colon, Semicolon, Dot, DashGreater,

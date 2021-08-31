@@ -46,6 +46,10 @@ namespace LoxSharp.Parsing
                 return Peek(-1);
             throw new Exception($"Expected one of {types} but found {Peek().Type}");
         }
+        public Expr Parse()
+        {
+            return Expression();
+        }
         private Expr Expression() => Comma();
 
         private Expr Comma()
@@ -70,7 +74,7 @@ namespace LoxSharp.Parsing
                 parameters.Add(Peek(-1));
                 while (Match(TokenType.Semicolon))
                 {
-                    parameters.Add(Consume(TokenType.Identifier))
+                    parameters.Add(Consume(TokenType.Identifier));
                 }
             }
             Consume(TokenType.RightParen);
@@ -128,12 +132,22 @@ namespace LoxSharp.Parsing
             var rhs = Unary();
             return new Expr.Unary(op, rhs);
         }
+        private Expr Call()
+        {
+            throw new NotImplementedException();
+        }
+        private Expr Access()
+        {
+            throw new NotImplementedException();
+        }
         private Expr Primary()
         {
             if (Match(TokenType.True)) return new Expr.Literal(true);
             if (Match(TokenType.False)) return new Expr.Literal(false);
             if (Match(TokenType.StringLit, TokenType.NumberLit))
-                return new Expr.Literal(Peek().Literal!);
+                return new Expr.Literal(Peek(-1).Literal!);
+            if (Match(TokenType.Identifier)) 
+                return new Expr.Variable(Peek(-1));
             if (Match(TokenType.LeftParen))
             {
                 var body = Expression();

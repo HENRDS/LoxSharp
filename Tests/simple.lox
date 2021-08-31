@@ -1,6 +1,1 @@
-class Person {
-    name: str;
-}
-fun greet(person: Person): Nil {
-    print("Hello " + person.name + "!");
-}
+c * (3 + 1) 

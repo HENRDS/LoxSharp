@@ -117,16 +117,14 @@ namespace LoxSharp.Parsing
         private Expr LogicalAnd() => LeftAssociativeLogicExpr(Equality, TokenType.And);
         private Expr Equality() => LeftAssociativeBinaryExpr(Comparison, TokenType.Equal2, TokenType.BangEqual);
         private Expr Comparison() =>
-            LeftAssociativeBinaryExpr(Add, TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual);
-        private Expr BitwiseOr() => LeftAssociativeBinaryExpr(BitwiseAnd, TokenType.Pipe);
-        private Expr BitwiseAnd() => LeftAssociativeBinaryExpr(BitShift, TokenType.Ampersand);
-        private Expr BitShift() => LeftAssociativeBinaryExpr(Add, TokenType.Shr, TokenType.Shl);
+            LeftAssociativeBinaryExpr(Cat, TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual);
+        private Expr Cat() => LeftAssociativeBinaryExpr(Add, TokenType.Ampersand);
         private Expr Add() => LeftAssociativeBinaryExpr(Mul, TokenType.Plus, TokenType.Minus);
         private Expr Mul() => LeftAssociativeBinaryExpr(Unary, TokenType.Star, TokenType.Slash);
 
         private Expr Unary()
         {
-            if (!Match(TokenType.Not, TokenType.Minus, TokenType.Plus, TokenType.Tilde))
+            if (!Match(TokenType.Not, TokenType.Minus, TokenType.Plus))
                 return Primary();
             Token op = Peek(-1);
             var rhs = Unary();

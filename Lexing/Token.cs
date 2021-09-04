@@ -4,11 +4,11 @@ namespace LoxSharp.Lexing
     {
         Invalid, NewLine, Whitespace, Comment,
         LeftParen, RightParen, LeftBracket, RightBracket, LeftBrace, RightBrace,
-        Plus, Minus, Star, Slash, Ampersand, Pipe, Equal, Equal2, Less, Greater, LessEqual, GreaterEqual,
-        Tilde,  BangEqual, Comma, Colon, Semicolon, Dot, DashGreater,
+        Plus, Minus, Star, Slash, Ampersand, Equal, Equal2, Less, Greater, LessEqual, GreaterEqual,
+        BangEqual, Comma, Colon, Semicolon, Dot, DashGreater,
         StringLit, NumberLit, Identifier,
 
-        And, Break, Const, Class, Continue, Else, Enum, False, For, Fun, If, In, Not, Nil, Or, Return, Shl, Shr,
+        And, Break, Const, Class, Continue, Else, Enum, False, For, Fun, If, In, Not, Nil, Or, Return,
         True, While,
 
         Eof

@@ -47,8 +47,7 @@ Chapter 2:
 - [X] Scanning
 - [X] Representing Code
 - [X] Parsing Expressions
-- [ ] Evaluating Expressions
-  - [ ] Typing
+- [X] Evaluating Expressions
 - [ ] Statements and State
 - [ ] Control Flow
 - [ ] Functions

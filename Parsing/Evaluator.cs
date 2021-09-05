@@ -1,9 +1,27 @@
+using System;
 using LoxSharp.Core;
 using LoxSharp.Lexing;
 namespace LoxSharp.Parsing
 {
     public class Evaluator : IExprVisitor<object?>
     {
+
+        public void Evaluate(Expr expr)
+        {
+            try
+            {
+                object? result = expr.Accept(this);
+                Console.WriteLine(result?.ToString());
+            }
+            catch (RuntimeException e)
+            {
+               ReportError(e);
+            }
+        }
+        void ReportError(RuntimeException error)
+        {
+            Console.WriteLine($"{error.Message} @ {error.Token.Position}");
+        }
         public object? VisitBinary(Expr.Binary binary)
         {
             object? left = binary.Left.Accept(this);

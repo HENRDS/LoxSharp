@@ -1,7 +1,4 @@
-using System.Collections.Generic;
 using LoxSharp.Lexing;
-using System.Linq;
-using System;
 using LoxSharp.Core;
 
 namespace LoxSharp.Parsing
@@ -36,9 +33,11 @@ namespace LoxSharp.Parsing
             return false;
         }
 
-        private ParseError Error(string message)
+        private ParseError Error(string message, Token? tk = null)
         {
-            return new ParseError(message);
+            if (tk is null)
+                return new ParseError(message);
+            return new ParseError($"{message} at {tk.Position}");
         }
         private Token Consume(params TokenType[] types)
         {
@@ -46,18 +45,113 @@ namespace LoxSharp.Parsing
                 return Peek(-1);
             throw new Exception($"Expected one of {types} but found {Peek().Type}");
         }
-        public Expr Parse()
+        private void Synchronize() 
         {
-            return Expression();
+            Advance();
+            while(!IsAtEnd) 
+            {
+                if (Peek(-1).Type == TokenType.Semicolon) return;
+                switch(Peek().Type) 
+                {
+                    case TokenType.Class:
+                    case TokenType.Fun:
+                    case TokenType.Var:
+                    case TokenType.For:
+                    case TokenType.If:
+                    case TokenType.While:
+                    case TokenType.Return:
+                        return;
+                }    
+                Advance();
+            }
+        }
+        public List<Stmt> Parse()
+        {
+            List<Stmt> stmts = new();
+            while(!IsAtEnd) 
+            {
+                Stmt? decl = Declaration();
+                if (decl != null)
+                    stmts.Add(decl);
+
+            }
+            return stmts;
+        }
+        private Stmt? Declaration() 
+        {
+            try 
+            {
+                if (Check(TokenType.Var))
+                    return VarStmt();
+                
+                return Statement();
+            } 
+            catch(RuntimeException)
+            {
+                Synchronize();
+                return null;
+            }
+        }
+        private Stmt Statement()
+        {
+            if (Check(TokenType.Identifier)) {
+                if (Peek().Lexeme == "print") 
+                {
+                    return PrintStmt();
+                }
+            }
+            if (Check(TokenType.Var))
+                return VarStmt();
+            return ExpressionStmt();
+
+        }
+        private Stmt ExpressionStmt()
+        {
+            Expr expr = Expression();
+            Consume(TokenType.Semicolon);
+            return new Stmt.Expression(expr);
+        }
+        private Stmt PrintStmt() 
+        {
+            Consume(TokenType.Identifier);
+            Consume(TokenType.LeftParen);
+            Expr expr = Expression();
+            Consume(TokenType.RightParen);
+            Consume(TokenType.Semicolon);
+
+            return new Stmt.Print(expr);
+        }
+        private Stmt VarStmt()
+        {
+            Consume(TokenType.Var);
+            Token name = Consume(TokenType.Identifier);
+            Consume(TokenType.Equal);
+            Expr init = Expression();
+            Consume(TokenType.Semicolon);
+            return new Stmt.Var(name, init);
         }
         private Expr Expression() => Comma();
-
+        private Expr Assignment() 
+        {
+            Expr lhs = Comma();
+            if (Match(TokenType.Equal))
+            {
+                Token equals = Peek(-1);
+                Expr value = Assignment();
+                if (lhs is Expr.Variable var) 
+                {
+                    return new Expr.Assign(var.Name, value);
+                }
+                throw Error("Invalid assignment target", equals);
+            }
+            return lhs;
+        }
         private Expr Comma()
         {
             List<Expr> exprs = new();
             do
             {
-                exprs.Add(Conditional());
+                exprs.Add(Lambda());
             }
             while(Match(TokenType.Comma));
             return exprs.Count == 1 ? exprs.First() : new Expr.Comma(exprs);
@@ -132,18 +226,36 @@ namespace LoxSharp.Parsing
         }
         private Expr Call()
         {
-            throw new NotImplementedException();
+            var lhs = Access();
+            // while(Match(TokenType.LeftParen))
+            // {
+            //     while(!Check(TokenType.RightParen)) 
+            //     {
+            //         if (Check(TokenType.Identifier)) {
+            //             if (Peek(2).Type == TokenType.Equal) {
+            //                 Token name = Consume(TokenType.Identifier);
+
+            //             }
+            //         }
+                    
+            //     }
+            //     Consume(TokenType.RightParen);
+            // }
+            return lhs;
         }
         private Expr Access()
         {
-            throw new NotImplementedException();
+            var lhs = Primary();
+            while(Match(TokenType.Dot))
+                lhs = new Expr.Access(lhs, Consume(TokenType.Identifier));
+            return lhs;
         }
         private Expr Primary()
         {
             if (Match(TokenType.True)) return new Expr.Literal(true);
             if (Match(TokenType.False)) return new Expr.Literal(false);
-            if (Match(TokenType.StringLit, TokenType.NumberLit))
-                return new Expr.Literal(Peek(-1).Literal!);
+            if (Match(TokenType.StringLit, TokenType.NumberLit, TokenType.Nil))
+                return new Expr.Literal(Peek(-1).Literal);
             if (Match(TokenType.Identifier)) 
                 return new Expr.Variable(Peek(-1));
             if (Match(TokenType.LeftParen))

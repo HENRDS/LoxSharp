@@ -19,10 +19,8 @@ namespace LoxSharp
             }
             var parser = new Parser(tokens);
             var tree = parser.Parse();
-            var evaluator = new Evaluator();
-            evaluator.Evaluate(tree);
-            var printer = new ExprPrinter();
-            Console.WriteLine(printer.Print(tree));
+            var interpreter = new Interpreter();
+            interpreter.Interpret(tree);
         }
     }
 }

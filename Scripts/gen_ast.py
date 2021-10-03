@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
+from itertools import chain
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Callable, Iterator, Optional
 from argparse import ArgumentParser
 from mako.template import Template
 
@@ -27,7 +28,7 @@ class Tree:
 class Prop:
     name: str
     type: str
-    init: bool = True
+    init: Optional[str] = None
 
     @property
     def arg_name(self) -> str:
@@ -43,15 +44,20 @@ class Node:
     props: list[Prop]
 
     @property
-    def init_props(self) -> Iterator[Prop]:
+    def _ctor_pos_args(self) -> Iterator[Prop]:
         for p in self.props:
-            if p.init:
+            if p.init is None:
                 yield p
-
+    @property
+    def _ctor_def_args(self) -> Iterator[Prop]:
+        for p in self.props:
+            if p.init is not None:
+                yield p
     @property
     def ctor_args(self) -> Iterator[str]:
-        for p in self.init_props:
-            yield f"{p.type} {p.arg_name}"
+        for p in chain(self._ctor_pos_args, self._ctor_def_args):
+            init = "" if p.init is None else f" = {p.init}"
+            yield f"{p.type} {p.arg_name}{init}"
 
     def __hash__(self) -> int:
         return hash(self.name)
@@ -80,7 +86,12 @@ class AstBuilder:
 
 def build_expr() -> AstBuilder:
     builder = AstBuilder("LoxSharp.Parsing", "Expr")
-    builder.using("System", "System.Collections.Generic", "LoxSharp.Lexing")
+    builder.using("LoxSharp.Lexing")
+    builder.add_node(
+        "Assign", 
+        Prop("Name", "Token"),
+        Prop("Expr", "Expr"),
+    )
     builder.add_node("Comma", Prop("Values", "List<Expr>"))
     builder.add_node(
         "Conditional",
@@ -109,7 +120,13 @@ def build_expr() -> AstBuilder:
         "Call",
         Prop("Callee", "Expr"),
         Prop("Paren", "Token"),
-        Prop("Arguments", "List<Expr>")
+        Prop("PositionalArguments", "List<Expr>?"),
+        Prop("NamedArguments", "Dictionary<string, Expr>?")
+    )
+    builder.add_node(
+        "Access",
+        Prop("Left", "Expr"),
+        Prop("Right", "Token")
     )
     builder.add_node(
         "Get",
@@ -124,12 +141,35 @@ def build_expr() -> AstBuilder:
     )
     builder.add_node("Grouping", Prop("Expr", "Expr"))
     builder.add_node("Variable", Prop("Name", "Token"))
-    builder.add_node("Literal", Prop("Value", "object"))
+    builder.add_node("Literal", Prop("Value", "object?"))
     return builder
 
+def build_stmt():
+    builder = AstBuilder("LoxSharp.Parsing", "Stmt")
+    builder.using("LoxSharp.Lexing")
+    builder.add_node("Expression", Prop("Expr", "Expr"))
+    builder.add_node("Print", Prop("Expr", "Expr"))
+    builder.add_node(
+        "Var", 
+        Prop("Name", "Token"),
+        Prop("Initializer", "Expr?"),
+    )
+    return builder
+
+def build_type_expr():
+    builder = AstBuilder("LoxSharp.Parsing", "Stmt")
+    builder.using("LoxSharp.Lexing")
+    builder.add_node(
+        "Generic", 
+        Prop("Name", "Token"),
+        Prop("PosArgs", "List<TypeExpr>")
+    )
+    return builder
 
 TREES = {
-    "expr": Tree(build_expr, ROOT_D / "Parsing" / "Expr.cs")
+    "expr": Tree(build_expr, ROOT_D / "Parsing" / "Expr.cs"),
+    "type_expr": Tree(build_type_expr, ROOT_D / "Parsing" / "TypeExpr.cs"),
+    "stmt": Tree(build_stmt, ROOT_D / "Parsing" / "Stmt.cs"),
 }
 
 def parse_cli_args():

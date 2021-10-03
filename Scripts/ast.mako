@@ -30,7 +30,7 @@ namespace ${ast.namespace}
                 %endfor
                 public ${node.name}(${", ".join(node.ctor_args)})
                 {
-                    %for prop in node.init_props:
+                    %for prop in node.props:
                     ${prop.name} = ${prop.arg_name};
                     %endfor
                 }

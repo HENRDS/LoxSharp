@@ -8,7 +8,7 @@ namespace LoxSharp.Lexing
         public static readonly HashSet<string> Keywords = new() {
             "and", "break", "const", "class", "continue", "else", "enum",
             "false", "for", "fun", "if", "in", "not", "nil", "or", "return",
-            "true", "while" };
+            "true", "var", "while" };
         private readonly SourceReader reader;
         public Lexer(SourceReader reader)
         {

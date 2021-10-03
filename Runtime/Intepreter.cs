@@ -1,31 +1,37 @@
-using System;
 using LoxSharp.Core;
 using LoxSharp.Lexing;
-namespace LoxSharp.Parsing
-{
-    public class Evaluator : IExprVisitor<object?>
-    {
+using LoxSharp.Parsing;
 
-        public void Evaluate(Expr expr)
+namespace LoxSharp.Runtime
+{
+    public class Interpreter : IExprVisitor<object?>, IStmtVisitor
+    {
+        readonly Scope scope = new();
+        public void Interpret(List<Stmt> stmts) 
         {
-            try
+            try 
             {
-                object? result = expr.Accept(this);
-                Console.WriteLine(result?.ToString());
+                foreach(Stmt stmt in stmts)
+                    Execute(stmt);
             }
-            catch (RuntimeException e)
+            catch (RuntimeException e) 
             {
-               ReportError(e);
+                ReportError(e);
             }
         }
+        private void Execute(Stmt stmt) 
+        {
+            stmt.Accept(this);    
+        }
+        private object? Evaluate(Expr expr) => expr.Accept(this);
         void ReportError(RuntimeException error)
         {
             Console.WriteLine($"{error.Message} @ {error.Token.Position}");
         }
         public object? VisitBinary(Expr.Binary binary)
         {
-            object? left = binary.Left.Accept(this);
-            object? right = binary.Right.Accept(this);
+            object? left = Evaluate(binary.Left);
+            object? right = Evaluate(binary.Right);
             switch (binary.Operator.Type)
             {
                 case TokenType.Greater:
@@ -76,18 +82,18 @@ namespace LoxSharp.Parsing
 
         public object? VisitConditional(Expr.Conditional conditional)
         {
-            bool condition = IsTruthy(conditional.Condition.Accept(this));
+            bool condition = IsTruthy(Evaluate(conditional.Condition));
             if (condition)
-                return conditional.Then.Accept(this);
-            return conditional.Else.Accept(this);
-       }
+                return Evaluate(conditional.Then);
+            return Evaluate(conditional.Else);
+        }
 
         public object? VisitGet(Expr.Get get)
         {
             throw new System.NotImplementedException();
         }
 
-        public object? VisitGrouping(Expr.Grouping grouping) => grouping.Expr.Accept(this);
+        public object? VisitGrouping(Expr.Grouping grouping) => Evaluate(grouping.Expr);
 
         public object? VisitLambda(Expr.Lambda lambda)
         {
@@ -101,12 +107,12 @@ namespace LoxSharp.Parsing
             switch(logic.Operator.Type)
             {
                 case TokenType.And:
-                    if (IsTruthy(logic.Left.Accept(this)))
-                        return IsTruthy(logic.Right.Accept(this));
+                    if (IsTruthy(Evaluate(logic.Left)))
+                        return IsTruthy(Evaluate(logic.Right));
                     return false;
                 case TokenType.Or:
-                    if (!IsTruthy(logic.Left.Accept(this)))
-                        return IsTruthy(logic.Right.Accept(this));
+                    if (!IsTruthy(Evaluate(logic.Left)))
+                        return IsTruthy(Evaluate(logic.Right));
                     return true;
                 default:
                     return null;
@@ -115,7 +121,7 @@ namespace LoxSharp.Parsing
 
         public object? VisitUnary(Expr.Unary unary)
         {
-            object? right = unary.Right.Accept(this);
+            object? right = Evaluate(unary.Right);
             switch (unary.Operator.Type)
             {
                 case TokenType.Not:
@@ -151,7 +157,40 @@ namespace LoxSharp.Parsing
         }
         public object? VisitVariable(Expr.Variable variable)
         {
-            throw new System.NotImplementedException();
+            return scope.Get(variable.Name);
+        }
+
+        public object? VisitAccess(Expr.Access access)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void VisitPrint(Stmt.Print print)
+        {
+            object? value = Evaluate(print.Expr);
+            Console.WriteLine(value);
+        }
+
+        public void VisitExpression(Stmt.Expression expression)
+        {
+            Evaluate(expression.Expr);
+        }
+
+        public void VisitVar(Stmt.Var var)
+        {
+            object? value = null;
+            if (var.Initializer != null) 
+            {
+                value = Evaluate(var.Initializer);
+            }
+            scope.Define(var.Name, value);
+        }
+
+        public object? VisitAssign(Expr.Assign assign)
+        {
+            object? value = Evaluate(assign.Expr);
+            scope.Assign(assign.Name, value);
+            return value;
         }
     }
 }

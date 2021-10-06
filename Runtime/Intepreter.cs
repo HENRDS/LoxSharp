@@ -6,7 +6,7 @@ namespace LoxSharp.Runtime
 {
     public class Interpreter : IExprVisitor<object?>, IStmtVisitor
     {
-        readonly Scope scope = new();
+        Scope scope = new();
         public void Interpret(List<Stmt> stmts) 
         {
             try 
@@ -191,6 +191,23 @@ namespace LoxSharp.Runtime
             object? value = Evaluate(assign.Expr);
             scope.Assign(assign.Name, value);
             return value;
+        }
+        private void ExecuteBlock(List<Stmt> stmts, Scope scope)
+        {
+            Scope previous = this.scope;
+            try {
+                this.scope = scope;
+                foreach(Stmt stmt in stmts)
+                    Execute(stmt);
+            }
+            finally
+            {
+                this.scope = previous;
+            }
+        }
+        public void VisitBlock(Stmt.Block block)
+        {
+            ExecuteBlock(block.Statements, new Scope(scope));
         }
     }
 }

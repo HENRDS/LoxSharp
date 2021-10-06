@@ -40,14 +40,31 @@ namespace LoxSharp.Runtime
         }
         public void Assign(Token name, object? value)
         {
-
+            if (values.ContainsKey(name.Lexeme)) 
+            {
+                values.Add(name.Lexeme, value);
+                return;
+            }
+            if (Parent != null)
+                Parent.Assign(name, value);
+                
+            throw new RuntimeException(name, $"Undeclared identifier {name.Lexeme}");
         }
         public object? Get(Token name) 
         {
             if (values.TryGetValue(name.Lexeme, out var value))
                 return value;
-            throw new RuntimeException(name);
+            if (Parent != null)
+                return Parent.Get(name);
+            throw new RuntimeException(name, $"Undeclared identifier {name.Lexeme}");
         }
-        public bool TryGetValue(string name, out object? value) => values.TryGetValue(name, out value);
+        public bool TryGetValue(string name, out object? value) 
+        {
+            if(values.TryGetValue(name, out value))
+                return true;
+            if (Parent != null)
+                return Parent.TryGetValue(name, out value); 
+            return false;
+        }
     }
 }

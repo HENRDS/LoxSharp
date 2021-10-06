@@ -100,10 +100,25 @@ namespace LoxSharp.Parsing
                     return PrintStmt();
                 }
             }
+            if (Check(TokenType.LeftBrace))
+                return BlockStmt();
             if (Check(TokenType.Var))
                 return VarStmt();
             return ExpressionStmt();
 
+        }
+        private Stmt BlockStmt()
+        {
+            Consume(TokenType.LeftBrace);
+            List<Stmt> stmts = new();
+            while (!Check(TokenType.RightBrace) && !IsAtEnd)
+            {
+                Stmt? decl = Declaration();
+                if (decl != null)
+                    stmts.Add(decl);
+            }
+            Consume(TokenType.RightBrace);
+            return new Stmt.Block(stmts);
         }
         private Stmt ExpressionStmt()
         {
@@ -130,7 +145,7 @@ namespace LoxSharp.Parsing
             Consume(TokenType.Semicolon);
             return new Stmt.Var(name, init);
         }
-        private Expr Expression() => Comma();
+        private Expr Expression() => Assignment();
         private Expr Assignment() 
         {
             Expr lhs = Comma();

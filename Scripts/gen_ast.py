@@ -154,6 +154,16 @@ def build_stmt():
         Prop("Name", "Token"),
         Prop("Initializer", "Expr?"),
     )
+    builder.add_node(
+        "Block",
+        Prop("Statements", "List<Stmt>")
+    )
+    builder.add_node(
+        "If",
+        Prop("Condition", "Expr"),
+        Prop("Then", "Stmt"),
+        Prop("Else", "Stmt"),
+    )
     return builder
 
 def build_type_expr():

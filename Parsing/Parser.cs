@@ -104,8 +104,22 @@ namespace LoxSharp.Parsing
                 return BlockStmt();
             if (Check(TokenType.Var))
                 return VarStmt();
+            if (Check(TokenType.If))
+                return IfStmt();
             return ExpressionStmt();
 
+        }
+        private Stmt IfStmt()
+        {
+            Consume(TokenType.If);
+            Consume(TokenType.LeftParen);
+            Expr condition = Expression();
+            Consume(TokenType.RightParen);
+            Stmt then = Statement();
+            Stmt? @else = null;
+            if (Match(TokenType.Else))
+                @else = Statement();
+            return new Stmt.If(condition, then, @else);
         }
         private Stmt BlockStmt()
         {

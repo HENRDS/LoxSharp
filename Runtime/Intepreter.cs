@@ -209,5 +209,13 @@ namespace LoxSharp.Runtime
         {
             ExecuteBlock(block.Statements, new Scope(scope));
         }
+
+        public void VisitIf(Stmt.If @if)
+        {
+            if (IsTruthy(Evaluate(@if.Condition)))
+                Execute(@if.Then);
+            else if (@if.Else is not null)
+                Execute(@if.Else);
+        }
     }
 }

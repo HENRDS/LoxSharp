@@ -162,7 +162,7 @@ def build_stmt():
         "If",
         Prop("Condition", "Expr"),
         Prop("Then", "Stmt"),
-        Prop("Else", "Stmt"),
+        Prop("Else", "Stmt?"),
     )
     return builder
 

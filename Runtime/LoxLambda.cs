@@ -7,14 +7,20 @@ namespace LoxSharp.Runtime
     public class LoxLambda : ILoxCallable
     {
         public int Arity { get; }
-        
-        public LoxLambda(List<Token> Parameters, Expr body)
+        public List<Token> Parameters { get; }
+        public Expr Body { get; }
+
+        public LoxLambda(List<Token> parameters, Expr body)
         {
-            
+            Parameters = parameters;
+            Body = body;
         }
-        public object? Call(Interpreter evaluator, params object[] arguments)
+        public object? Call(Interpreter interpreter, params object?[] arguments) => 
+            Call(interpreter, arguments.AsEnumerable());
+
+        public object? Call(Interpreter interpreter, IEnumerable<object?> arguments)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 }

@@ -6,24 +6,31 @@ namespace LoxSharp.Runtime
 {
     public class Interpreter : IExprVisitor<object?>, IStmtVisitor
     {
-        Scope scope = new();
-        public void Interpret(List<Stmt> stmts) 
+        internal Scope Global { get; private set; }
+        internal Scope CurrentScope { get; private set; }
+        public Interpreter()
         {
-            try 
+            Global = new Scope();
+            CurrentScope = Global;
+            Global.SafeDefine("clock", new LoxNative(0, _ => (double)DateTime.Now.TimeOfDay.Milliseconds));
+        }
+        public void Interpret(List<Stmt> stmts)
+        {
+            try
             {
-                foreach(Stmt stmt in stmts)
+                foreach (Stmt stmt in stmts)
                     Execute(stmt);
             }
-            catch (RuntimeException e) 
+            catch (RuntimeException e)
             {
                 ReportError(e);
             }
         }
-        private void Execute(Stmt stmt) 
+        private void Execute(Stmt stmt)
         {
-            stmt.Accept(this);    
+            stmt.Accept(this);
         }
-        private object? Evaluate(Expr expr) => expr.Accept(this);
+        public object? Evaluate(Expr expr) => expr.Accept(this);
         void ReportError(RuntimeException error)
         {
             Console.WriteLine($"{error.Message} @ {error.Token.Position}");
@@ -36,10 +43,10 @@ namespace LoxSharp.Runtime
             {
                 case TokenType.Greater:
                     CheckNumberOperand<double>(binary.Operator, left, right);
-                    return (double)left! >  (double)right!;
+                    return (double)left! > (double)right!;
                 case TokenType.Less:
                     CheckNumberOperand<double>(binary.Operator, left, right);
-                    return (double)left! <  (double)right!;
+                    return (double)left! < (double)right!;
                 case TokenType.GreaterEqual:
                     CheckNumberOperand<double>(binary.Operator, left, right);
                     return (double)left! >= (double)right!;
@@ -47,9 +54,9 @@ namespace LoxSharp.Runtime
                     CheckNumberOperand<double>(binary.Operator, left, right);
                     return (double)left! <= (double)right!;
                 case TokenType.Equal2:
-                    return left == right;
+                    return IsTruthy(left?.Equals(right));
                 case TokenType.BangEqual:
-                    return left != right;
+                    return !IsTruthy(left?.Equals(right));
                 case TokenType.Plus:
                     CheckNumberOperand<double>(binary.Operator, left, right);
                     return (double)left! + (double)right!;
@@ -61,10 +68,10 @@ namespace LoxSharp.Runtime
                     return (double)left! * (double)right!;
                 case TokenType.Slash:
                     CheckNumberOperand<double>(binary.Operator, left, right);
-                    return (double)left! / (double)right!; 
+                    return (double)left! / (double)right!;
                 case TokenType.Ampersand:
                     CheckNumberOperand<string>(binary.Operator, left, right);
-                    return (string)left! + (string)right!; 
+                    return (string)left! + (string)right!;
                 default:
                     return null;
             }
@@ -72,7 +79,15 @@ namespace LoxSharp.Runtime
 
         public object? VisitCall(Expr.Call call)
         {
-            throw new System.NotImplementedException();
+            object? callee = Evaluate(call.Callee);
+            if (callee is ILoxCallable callable)
+            {
+                List<object?> arguments = call.PositionalArguments.Select(Evaluate).ToList();
+                if (arguments.Count != callable.Arity)
+                    throw new RuntimeException(call.Paren, $"Expected {callable.Arity} arguments for function call, but got {arguments.Count}");
+                return callable.Call(this, arguments);
+            }
+            throw new RuntimeException(call.Paren, "Can only call functions or classes");
         }
 
         public object? VisitComma(Expr.Comma comma)
@@ -104,7 +119,7 @@ namespace LoxSharp.Runtime
 
         public object? VisitLogic(Expr.Logic logic)
         {
-            switch(logic.Operator.Type)
+            switch (logic.Operator.Type)
             {
                 case TokenType.And:
                     if (IsTruthy(Evaluate(logic.Left)))
@@ -125,19 +140,20 @@ namespace LoxSharp.Runtime
             switch (unary.Operator.Type)
             {
                 case TokenType.Not:
-                    return !IsTruthy(right); 
+                    return !IsTruthy(right);
                 case TokenType.Minus:
                     CheckNumberOperand(unary.Operator, right);
-                    return - (double)right!;
+                    return -(double)right!;
                 case TokenType.Plus:
                     CheckNumberOperand(unary.Operator, right);
-                    return + (double)right!;
+                    return +(double)right!;
                 default:
                     return null;
             }
         }
         bool IsTruthy(object? value) =>
-            value switch {
+            value switch
+            {
                 null => false,
                 bool b => b,
                 double d => d != 0,
@@ -145,19 +161,19 @@ namespace LoxSharp.Runtime
             };
         void CheckNumberOperand(Token @operator, object? operand)
         {
-            if (operand is double) 
+            if (operand is double)
                 return;
             throw new RuntimeException(@operator, "Operand must be a number");
         }
         void CheckNumberOperand<T>(Token @operator, object? operand1, object? operand2)
         {
-            if (operand1 is T && operand2 is T) 
+            if (operand1 is T && operand2 is T)
                 return;
             throw new RuntimeException(@operator, "Operands must be a numbers");
         }
         public object? VisitVariable(Expr.Variable variable)
         {
-            return scope.Get(variable.Name);
+            return CurrentScope.Get(variable.Name);
         }
 
         public object? VisitAccess(Expr.Access access)
@@ -179,35 +195,36 @@ namespace LoxSharp.Runtime
         public void VisitVar(Stmt.Var var)
         {
             object? value = null;
-            if (var.Initializer != null) 
+            if (var.Initializer != null)
             {
                 value = Evaluate(var.Initializer);
             }
-            scope.Define(var.Name, value);
+            CurrentScope.Define(var.Name, value);
         }
 
         public object? VisitAssign(Expr.Assign assign)
         {
             object? value = Evaluate(assign.Expr);
-            scope.Assign(assign.Name, value);
+            CurrentScope.Assign(assign.Name, value);
             return value;
         }
-        private void ExecuteBlock(List<Stmt> stmts, Scope scope)
+        internal void ExecuteBlock(List<Stmt> stmts, Scope scope)
         {
-            Scope previous = this.scope;
-            try {
-                this.scope = scope;
-                foreach(Stmt stmt in stmts)
+            Scope previous = this.CurrentScope;
+            try
+            {
+                this.CurrentScope = scope;
+                foreach (Stmt stmt in stmts)
                     Execute(stmt);
             }
             finally
             {
-                this.scope = previous;
+                this.CurrentScope = previous;
             }
         }
         public void VisitBlock(Stmt.Block block)
         {
-            ExecuteBlock(block.Statements, new Scope(scope));
+            ExecuteBlock(block.Statements, new Scope(CurrentScope));
         }
 
         public void VisitIf(Stmt.If @if)
@@ -216,6 +233,55 @@ namespace LoxSharp.Runtime
                 Execute(@if.Then);
             else if (@if.Else is not null)
                 Execute(@if.Else);
+        }
+
+        public void VisitWhile(Stmt.While @while)
+        {
+            while (IsTruthy(Evaluate(@while.Condition)))
+            {
+                try
+                {
+                    Execute(@while.Body);
+                }
+                catch (ContinueException)
+                {
+                    continue;
+                }
+                catch (BreakException)
+                {
+                    break;
+                }
+            }
+        }
+
+        public void VisitBreak(Stmt.Break @break)
+        {
+            if (@break.Condition is not null)
+                if (!IsTruthy(Evaluate(@break.Condition)))
+                    return;
+            throw new BreakException();
+        }
+
+        public void VisitContinue(Stmt.Continue @continue)
+        {
+            if (@continue.Condition is not null)
+                if (!IsTruthy(Evaluate(@continue.Condition)))
+                    return;
+            throw new ContinueException();
+        }
+
+        public void VisitFunction(Stmt.Function function)
+        {
+            LoxFunction callable = new(function);
+            CurrentScope.Define(function.Name, callable);
+        }
+
+        public void VisitReturn(Stmt.Return @return)
+        {
+            object? value = null;
+            if (@return.Value is not null)
+                value = Evaluate(@return.Value);
+            throw new ReturnException(value);
         }
     }
 }

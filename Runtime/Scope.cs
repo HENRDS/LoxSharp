@@ -46,7 +46,10 @@ namespace LoxSharp.Runtime
                 return;
             }
             if (Parent != null)
+            {
                 Parent.Assign(name, value);
+                return; 
+            }
                 
             throw new RuntimeException(name, $"Undeclared identifier {name.Lexeme}");
         }

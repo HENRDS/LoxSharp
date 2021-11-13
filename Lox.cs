@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using LoxSharp.Lexing;
 using LoxSharp.Parsing;
+using LoxSharp.Runtime;
 
 namespace LoxSharp
 {

@@ -43,5 +43,15 @@ namespace LoxSharp.Parsing
 
         public string VisitVariable(Expr.Variable variable) => variable.Name.Lexeme;
         public string Print(Expr expr) => expr.Accept(this);
+
+        public string VisitAssign(Expr.Assign assign)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string VisitAccess(Expr.Access access)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

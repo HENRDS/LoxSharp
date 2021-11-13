@@ -13,7 +13,7 @@ fun(x) -> x + 1;
 ### Expression if
 
 ```
-if x > 0 -> true else false;
+x if x > 0 else -1;
 ```
 
 ### Records instead of classes
@@ -48,13 +48,10 @@ Chapter 2:
 - [X] Representing Code
 - [X] Parsing Expressions
 - [X] Evaluating Expressions
-- [ ] Statements and State
-- [ ] Control Flow
+- [X] Statements and State
+- [X] Control Flow
 - [ ] Functions
 - [ ] Resolving and Binding
-  - [ ] Variables
-  - [ ] Constants
-  - [ ] Let bindings
 - [ ] Classes (Records)
 - [ ] Inheritance (maybe)
 

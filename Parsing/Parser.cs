@@ -7,10 +7,14 @@ namespace LoxSharp.Parsing
     {
         private readonly List<Token> tokens;
         private int current;
+        private bool isInsideLoop;
+        private bool isInsideFunction;
         public Parser(List<Token> tokens)
         {
             this.tokens = tokens;
             current = 0;
+            isInsideLoop = false;
+            isInsideFunction = false;
         }
         private Token Peek(int offset = 0) => tokens[current + offset];
         private bool IsAtEnd => Peek().Type == TokenType.Eof;
@@ -20,6 +24,12 @@ namespace LoxSharp.Parsing
             if (!IsAtEnd)
                 current++;
             return Peek(-1);
+        }
+        private Token Recede()
+        {
+            if (current > 0)
+                current--;
+            return Peek(1);
         }
 
         private bool Check(params TokenType[] types) => !IsAtEnd && types.Contains(Peek().Type);
@@ -36,7 +46,7 @@ namespace LoxSharp.Parsing
         private ParseError Error(string message, Token? tk = null)
         {
             if (tk is null)
-                return new ParseError(message);
+                tk = Peek();
             return new ParseError($"{message} at {tk.Position}");
         }
         private Token Consume(params TokenType[] types)
@@ -81,9 +91,10 @@ namespace LoxSharp.Parsing
         {
             try 
             {
-                if (Check(TokenType.Var))
-                    return VarStmt();
-                
+                if (Match(TokenType.Var))
+                    return VarDecl();
+                if (Match(TokenType.Fun))
+                    return FunDecl();
                 return Statement();
             } 
             catch(RuntimeException)
@@ -94,24 +105,158 @@ namespace LoxSharp.Parsing
         }
         private Stmt Statement()
         {
-            if (Check(TokenType.Identifier)) {
-                if (Peek().Lexeme == "print") 
+            if (Match(TokenType.Identifier)) {
+                if (Peek(-1).Lexeme == "print") 
                 {
                     return PrintStmt();
                 }
             }
             if (Check(TokenType.LeftBrace))
                 return BlockStmt();
-            if (Check(TokenType.Var))
-                return VarStmt();
-            if (Check(TokenType.If))
+            if (Match(TokenType.If))
                 return IfStmt();
-            return ExpressionStmt();
+            if (Match(TokenType.While))
+                return WhileStmt();
+            if (Match(TokenType.Return))
+                return ReturnStmt();
+            if (Match(TokenType.Break))
+                return BreakStmt();
+            if (Match(TokenType.Continue))
+                return ContinueStmt();
+            if (Match(TokenType.For))
+                return ForStmt();
 
+            return ExpressionStmt();
+        }
+        private Stmt ReturnStmt() 
+        {
+            if (!isInsideFunction)
+                throw Error("Cannot call return outside a function");
+            Expr? expr = null;
+            if (!Check(TokenType.Semicolon))
+            {
+                expr = Expression();
+            }
+            Consume(TokenType.Semicolon);
+            return new Stmt.Return(expr);
+        }
+        private Stmt FunDecl() 
+        {
+            if (!Check(TokenType.Identifier))
+            {
+                Recede();
+                return new Stmt.Expression(Lambda());
+            }
+            Token name = Consume(TokenType.Identifier);
+            Consume(TokenType.LeftParen);
+            List<Token> parameters = new();
+            if (!Check(TokenType.RightParen))
+            {
+                do
+                {
+                    parameters.Add(Consume(TokenType.Identifier));
+                } while (Match(TokenType.Comma));
+            }
+            Consume(TokenType.RightParen);
+            bool isInsideFunction = this.isInsideFunction;
+            try
+            {
+                this.isInsideFunction = true;
+                Stmt body = BlockStmt();
+                return new Stmt.Function(name, parameters, body); 
+            }
+            finally
+            {
+                this.isInsideFunction = isInsideFunction;
+            }
+        }
+        private Stmt ForStmt() 
+        {
+            Consume(TokenType.LeftParen);
+            Stmt? init;
+            if (Match(TokenType.Semicolon))
+                init = null;
+            else if (Match(TokenType.Var))
+                init = VarDecl();
+            else 
+                init = ExpressionStmt();
+            Expr? condition = null;
+            if (Check(TokenType.Semicolon))
+                condition = Expression();
+            Consume(TokenType.Semicolon);
+            Expr? incr = null;
+            if (!Check(TokenType.RightParen))
+                incr = Expression();
+            Consume(TokenType.RightParen);
+            Stmt body = Statement();
+            
+            if (incr is not null) 
+            {
+                body = new Stmt.Block(
+                    new List<Stmt>
+                    {
+                        body, 
+                        new Stmt.Expression(incr) 
+                    }
+                );
+            }
+            if (condition is null) 
+                condition = new Expr.Literal(true);
+            body = new Stmt.While(condition, body);
+            if (init is not null)
+            {
+                body = new Stmt.Block(
+                    new List<Stmt> 
+                    {
+                        init,
+                        body
+                    }
+                );
+            }
+            return body;
+        }
+        private Stmt BreakStmt()
+        {
+            if (!isInsideLoop)
+                throw Error("Cannot use break outside loop");
+            Consume(TokenType.Break);
+            Expr? condition = null;
+            if (Match(TokenType.If))
+                condition = Expression();
+            Consume(TokenType.Semicolon);
+            return new Stmt.Break(condition);
+        }
+        private Stmt ContinueStmt()
+        {
+            if (!isInsideLoop)
+                throw Error("Cannot use continue outside loop");
+            Consume(TokenType.Continue);
+            Expr? condition = null;
+            if (Match(TokenType.If))
+                condition = Expression();
+            Consume(TokenType.Semicolon);
+            return new Stmt.Continue(condition);
+        }
+        private Stmt WhileStmt()
+        {
+            bool isInsideLoop = this.isInsideLoop;
+            try 
+            {
+                this.isInsideLoop = true;
+                Consume(TokenType.LeftParen);
+                Expr condition = Expression();
+                Consume(TokenType.RightParen);
+                Stmt body = Statement();
+                return new Stmt.While(condition, body);
+            } 
+            finally
+            {
+                this.isInsideLoop = isInsideLoop;
+            }
         }
         private Stmt IfStmt()
         {
-            Consume(TokenType.If);
+
             Consume(TokenType.LeftParen);
             Expr condition = Expression();
             Consume(TokenType.RightParen);
@@ -142,7 +287,6 @@ namespace LoxSharp.Parsing
         }
         private Stmt PrintStmt() 
         {
-            Consume(TokenType.Identifier);
             Consume(TokenType.LeftParen);
             Expr expr = Expression();
             Consume(TokenType.RightParen);
@@ -150,9 +294,8 @@ namespace LoxSharp.Parsing
 
             return new Stmt.Print(expr);
         }
-        private Stmt VarStmt()
+        private Stmt VarDecl()
         {
-            Consume(TokenType.Var);
             Token name = Consume(TokenType.Identifier);
             Consume(TokenType.Equal);
             Expr init = Expression();
@@ -207,14 +350,15 @@ namespace LoxSharp.Parsing
         }
         private Expr Conditional()
         {
-            if (!Match(TokenType.If))
-                return LogicalOr();
             var condition = LogicalOr();
-            Consume(TokenType.DashGreater);
-            var then = Conditional();
-            Consume(TokenType.Else);
-            var @else = Conditional();
-            return new Expr.Conditional(condition, then, @else);
+            
+            if (!Match(TokenType.If)) {
+                var then = Conditional();
+                Consume(TokenType.Else);
+                var @else = Conditional();
+                return new Expr.Conditional(condition, then, @else);
+            }
+            return condition;
         }
         private Expr LeftAssociativeBinaryRule(
             Func<Expr> subRule,
@@ -253,24 +397,36 @@ namespace LoxSharp.Parsing
             var rhs = Unary();
             return new Expr.Unary(op, rhs);
         }
+        private Expr FinishCall(Expr callee)
+        {
+            List<Expr> args = new();
+            if (!Check(TokenType.RightParen))
+            {
+                do
+                {
+                    if (args.Count >= 255)
+                        throw Error("Cannot have more than 255 arguments in a function call");
+                    args.Add(Expression());
+                } while (Match(TokenType.Comma));
+            }
+            Token paren = Consume(TokenType.RightParen);
+            return new Expr.Call(callee, paren, args, null);    
+        }
         private Expr Call()
         {
-            var lhs = Access();
-            // while(Match(TokenType.LeftParen))
-            // {
-            //     while(!Check(TokenType.RightParen)) 
-            //     {
-            //         if (Check(TokenType.Identifier)) {
-            //             if (Peek(2).Type == TokenType.Equal) {
-            //                 Token name = Consume(TokenType.Identifier);
-
-            //             }
-            //         }
-                    
-            //     }
-            //     Consume(TokenType.RightParen);
-            // }
-            return lhs;
+            var expr = Access();
+            while (true) 
+            {
+                if (Match(TokenType.LeftParen))
+                {
+                    expr = FinishCall(expr);   
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return expr;
         }
         private Expr Access()
         {

@@ -15,8 +15,5 @@ namespace LoxSharp.Core
         public RuntimeException(Token token, string message, System.Exception inner) : base(message, inner) {
             Token = token;
          }
-        protected RuntimeException(
-            System.Runtime.Serialization.SerializationInfo info,
-            System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

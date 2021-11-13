@@ -120,7 +120,7 @@ def build_expr() -> AstBuilder:
         "Call",
         Prop("Callee", "Expr"),
         Prop("Paren", "Token"),
-        Prop("PositionalArguments", "List<Expr>?"),
+        Prop("PositionalArguments", "List<Expr>"),
         Prop("NamedArguments", "Dictionary<string, Expr>?")
     )
     builder.add_node(
@@ -164,6 +164,21 @@ def build_stmt():
         Prop("Then", "Stmt"),
         Prop("Else", "Stmt?"),
     )
+    builder.add_node(
+        "While",
+        Prop("Condition", "Expr"),
+        Prop("Body", "Stmt"),
+    )
+    builder.add_node("Break", Prop("Condition", "Expr?"))
+    builder.add_node("Continue", Prop("Condition", "Expr?"))
+    builder.add_node("Return", Prop("Value", "Expr?"))
+    builder.add_node(
+        "Function",
+        Prop("Name", "Token"),
+        Prop("Parameters", "List<Token>"),
+        Prop("Body", "Stmt"),
+    )
+
     return builder
 
 def build_type_expr():

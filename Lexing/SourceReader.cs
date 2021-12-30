@@ -47,7 +47,10 @@ namespace LoxSharp.Lexing
         public SourcePosition Position => new(Line, LexemeStart - LineStart, Absolute);
         public void HandleNewLine()
         {
-            Advance();
+            if (IsAtEnd)
+                return;
+            // Advance();
+            Line += 1;
             FillBuffer();
             Sync();
         }
@@ -73,7 +76,7 @@ namespace LoxSharp.Lexing
             LexemeStart = BufferPos;
         }
         public bool Match(params char[] options)  {
-            if (options.Contains(Peek()))
+            if (options.Contains(Current))
             {
                 Advance();
                 return true;

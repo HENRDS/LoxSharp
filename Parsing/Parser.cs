@@ -32,7 +32,7 @@ namespace LoxSharp.Parsing
             return Peek(1);
         }
 
-        private bool Check(params TokenType[] types) => !IsAtEnd && types.Contains(Peek().Type);
+        private bool Check(params TokenType[] types) => !IsAtEnd && types.Contains(tokens[current].Type);
         private bool Match(params TokenType[] types)
         {
             if (types.Contains(tokens[current].Type))
@@ -53,7 +53,8 @@ namespace LoxSharp.Parsing
         {
             if (Match(types))
                 return Peek(-1);
-            throw new Exception($"Expected one of {types} but found {Peek().Type}");
+            var typesStr = string.Join(',', types.Select(t => t.ToString()));
+            throw new Exception($"Expected one of {{{typesStr}}} but found {Peek().Type} at {tokens[current].Position}");
         }
         private void Synchronize() 
         {
@@ -352,7 +353,7 @@ namespace LoxSharp.Parsing
         {
             var condition = LogicalOr();
             
-            if (!Match(TokenType.If)) {
+            if (Match(TokenType.If)) {
                 var then = Conditional();
                 Consume(TokenType.Else);
                 var @else = Conditional();
@@ -392,7 +393,7 @@ namespace LoxSharp.Parsing
         private Expr Unary()
         {
             if (!Match(TokenType.Not, TokenType.Minus, TokenType.Plus))
-                return Primary();
+                return Call();
             Token op = Peek(-1);
             var rhs = Unary();
             return new Expr.Unary(op, rhs);
@@ -414,7 +415,7 @@ namespace LoxSharp.Parsing
         }
         private Expr Call()
         {
-            var expr = Access();
+            var expr = Get();
             while (true) 
             {
                 if (Match(TokenType.LeftParen))
@@ -428,11 +429,11 @@ namespace LoxSharp.Parsing
             }
             return expr;
         }
-        private Expr Access()
+        private Expr Get()
         {
             var lhs = Primary();
             while(Match(TokenType.Dot))
-                lhs = new Expr.Access(lhs, Consume(TokenType.Identifier));
+                lhs = new Expr.Get(lhs, Consume(TokenType.Identifier));
             return lhs;
         }
         private Expr Primary()

@@ -8,11 +8,30 @@ namespace LoxSharp.Runtime
     {
         internal Scope Global { get; private set; }
         internal Scope CurrentScope { get; private set; }
+        internal Dictionary<Expr, int> Locals {get;}
         public Interpreter()
         {
             Global = new Scope();
             CurrentScope = Global;
+            Locals = new();
             Global.SafeDefine("clock", new LoxNative(0, _ => (double)DateTime.Now.TimeOfDay.Milliseconds));
+        }
+
+        public void Resolve(Expr expr, int depth)
+        {
+            Locals[expr] = depth;
+        }
+
+        private object? LookupName(Token name, Expr expr)
+        {
+            if (Locals.TryGetValue(expr, out var distance))
+            {
+                return CurrentScope.GetAt(name, distance);
+            }
+            else
+            {
+                return Global.Get(name);
+            }
         }
         public void Interpret(List<Stmt> stmts)
         {
@@ -176,11 +195,6 @@ namespace LoxSharp.Runtime
             return CurrentScope.Get(variable.Name);
         }
 
-        public object? VisitAccess(Expr.Access access)
-        {
-            throw new NotImplementedException();
-        }
-
         public void VisitPrint(Stmt.Print print)
         {
             object? value = Evaluate(print.Expr);
@@ -205,7 +219,14 @@ namespace LoxSharp.Runtime
         public object? VisitAssign(Expr.Assign assign)
         {
             object? value = Evaluate(assign.Expr);
-            CurrentScope.Assign(assign.Name, value);
+            if (Locals.TryGetValue(assign, out var distance))
+            {
+                CurrentScope.AssginAt(assign.Name, value, distance);
+            }
+            else
+            {
+                Global.Assign(assign.Name, value);
+            }
             return value;
         }
         internal void ExecuteBlock(List<Stmt> stmts, Scope scope)
@@ -272,15 +293,15 @@ namespace LoxSharp.Runtime
 
         public void VisitFunction(Stmt.Function function)
         {
-            LoxFunction callable = new(function);
+            LoxFunction callable = new(function, new Scope(CurrentScope));
             CurrentScope.Define(function.Name, callable);
         }
 
-        public void VisitReturn(Stmt.Return @return)
+         public void VisitReturn(Stmt.Return @return)
         {
             object? value = null;
             if (@return.Value is not null)
-                value = Evaluate(@return.Value);
+                value = Evaluate(@return.Value);  
             throw new ReturnException(value);
         }
     }

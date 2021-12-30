@@ -21,6 +21,8 @@ namespace LoxSharp
             var parser = new Parser(tokens);
             var tree = parser.Parse();
             var interpreter = new Interpreter();
+            var resolver = new Resolver(interpreter);
+            resolver.Resolve(tree);
             interpreter.Interpret(tree);
         }
     }

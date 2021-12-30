@@ -49,9 +49,5 @@ namespace LoxSharp.Parsing
             throw new NotImplementedException();
         }
 
-        public string VisitAccess(Expr.Access access)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

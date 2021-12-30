@@ -124,11 +124,6 @@ def build_expr() -> AstBuilder:
         Prop("NamedArguments", "Dictionary<string, Expr>?")
     )
     builder.add_node(
-        "Access",
-        Prop("Left", "Expr"),
-        Prop("Right", "Token")
-    )
-    builder.add_node(
         "Get",
         Prop("Object", "Expr"),
         Prop("Name", "Token")

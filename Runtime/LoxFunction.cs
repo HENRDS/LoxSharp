@@ -9,10 +9,11 @@ namespace LoxSharp.Runtime
     {
         public int Arity => Declaration.Parameters.Count;
         public Stmt.Function Declaration { get; }
-
-        public LoxFunction(Stmt.Function declaration)
+        public Scope Closure {get;}
+        public LoxFunction(Stmt.Function declaration, Scope closure)
         {
             Declaration = declaration;
+            Closure = closure;
         }
         public object? Call(Interpreter interpreter, params object?[] arguments) => Call(interpreter, arguments.AsEnumerable());
 
@@ -20,7 +21,7 @@ namespace LoxSharp.Runtime
         {
             if (arguments.Count() != Arity)
                 throw new ParameterMismatchException($"Expected {Arity} arguments but got {arguments.Count()}");
-            Scope functionScope = new Scope(interpreter.CurrentScope);
+            Scope functionScope = new Scope(Closure);
             foreach(var (param, arg) in Declaration.Parameters.Zip(arguments))
             {
                 functionScope.Define(param, arg);

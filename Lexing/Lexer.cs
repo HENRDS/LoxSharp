@@ -49,9 +49,8 @@ namespace LoxSharp.Lexing
         }
         private Token Identifier()
         {
-            while (reader.Peek().IsIdentifierChar())
+            while (reader.Current.IsIdentifierChar())
                 reader.Advance();
-            reader.Advance();
             if (Keywords.Contains(reader.Lexeme))
                 return EmitToken(Enum.Parse<TokenType>(reader.Lexeme, true));
             return EmitToken(TokenType.Identifier);
@@ -90,7 +89,8 @@ namespace LoxSharp.Lexing
                 case ';': return EmitToken(TokenType.Semicolon);
                 case '#': return Comment();
                 case ' ':
-                    while (reader.Current == ' ')
+                case '\t':
+                    while (reader.Current is ' ' or '\t')
                         reader.Advance();
                     return EmitToken(TokenType.Whitespace);
 

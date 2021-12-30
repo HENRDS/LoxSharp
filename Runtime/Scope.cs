@@ -5,7 +5,7 @@ using LoxSharp.Lexing;
 
 namespace LoxSharp.Runtime
 {
-    class Scope: IEnumerable<KeyValuePair<string, object?>>, IEnumerable
+    public class Scope: IEnumerable<KeyValuePair<string, object?>>, IEnumerable
     {
         private readonly Dictionary<string, object?> values;
         public Scope? Parent {get;}
@@ -68,6 +68,23 @@ namespace LoxSharp.Runtime
             if (Parent != null)
                 return Parent.TryGetValue(name, out value); 
             return false;
+        }
+        private Scope ScopeAt(int distance) 
+        {
+            Scope current = this;
+            while (distance-- > 0)
+            {
+                current = current.Parent!;
+            }
+            return current;
+        }
+        public void AssginAt(Token name, object? value, int distance)
+        {
+            ScopeAt(distance).values[name.Lexeme] = value;
+        }
+        public object? GetAt(Token name, int distance)
+        {
+            return ScopeAt(distance).values[name.Lexeme];
         }
     }
 }

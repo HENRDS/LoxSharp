@@ -17,7 +17,8 @@ namespace LoxSharp.Runtime
         private enum ClassType 
         {
             None,
-            Class
+            Class,
+            SubClass
         }
         private readonly Stack<Dictionary<string, bool>> scopes;
         private readonly Interpreter Interpreter;
@@ -229,9 +230,20 @@ namespace LoxSharp.Runtime
         public void VisitClass(Stmt.Class @class)
         {
             ClassType enclosingClassType = classType;
-            classType = ClassType.Class;
+            classType = @class.Base is null ? ClassType.Class : ClassType.SubClass;
             Declare(@class.Name);
             Define(@class.Name);
+            if (@class.Base is not null) 
+            {
+                if (@class.Base.Name.Lexeme == @class.Name.Lexeme)
+                    throw new RuntimeException(@class.Base.Name, "Class cannot inherit itself");
+                Resolve(@class.Base);
+            }
+            if (@class.Base is not null) 
+            {
+                BeginScope();
+                scopes.Peek()["base"] = true;
+            }
             BeginScope();
             scopes.Peek()["this"] = true;
             foreach(Stmt.Function meth in @class.Methods)
@@ -240,6 +252,8 @@ namespace LoxSharp.Runtime
                 ResolveFunction(meth, declaration);
             }
             EndScope();
+            if (@class.Base is not null)
+                EndScope();
             classType = enclosingClassType;
         }
 
@@ -255,6 +269,20 @@ namespace LoxSharp.Runtime
                 throw new RuntimeException(@this.Keyword, "Can't use this outside class");
             ResolveLocal(@this, @this.Keyword);
         }
+
+        public void VisitBase(Expr.Base @base)
+        {
+            switch (classType) 
+            {
+                case ClassType.None:
+                    throw new RuntimeException(@base.Keyword, "Cannot use 'base' outside class");
+                case ClassType.Class:
+                    throw new RuntimeException(@base.Keyword, "Cannot use 'base' inside a class without base class");
+            }
+            ResolveLocal(@base, @base.Keyword);
+        }
+
+        
     }
 
 }

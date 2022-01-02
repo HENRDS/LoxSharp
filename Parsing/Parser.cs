@@ -147,6 +147,11 @@ namespace LoxSharp.Parsing
         private Stmt ClassDecl()
         {
             Token name = Consume(TokenType.Identifier);
+            Expr.Variable? baseClass = null;
+            if (Match(TokenType.Less))
+            {
+                baseClass = new Expr.Variable(Consume(TokenType.Identifier));
+            }
             Consume(TokenType.LeftBrace);
             List<Stmt.Function> methods = new();
             while (!Check(TokenType.RightBrace) && !IsAtEnd)
@@ -154,7 +159,7 @@ namespace LoxSharp.Parsing
                 methods.Add((Stmt.Function)FunDecl());
             }
             Consume(TokenType.RightBrace);
-            return new Stmt.Class(name, methods);
+            return new Stmt.Class(name, baseClass, methods);
         }
         private Stmt FunDecl() 
         {
@@ -469,6 +474,14 @@ namespace LoxSharp.Parsing
             }
             if (Match(TokenType.This))
                 return new Expr.This(Peek(-1));
+            
+            if (Match(TokenType.Base))
+            {
+                Token keyword = Peek(-1);
+                Consume(TokenType.Dot);
+                Token name = Consume(TokenType.Identifier);
+                return new Expr.Base(keyword, name);
+            }
             throw Error("Expected expression");
 
         }

@@ -58,5 +58,10 @@ namespace LoxSharp.Parsing
         {
             return "this";
         }
+
+        public string VisitBase(Expr.Base @base)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

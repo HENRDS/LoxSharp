@@ -8,7 +8,7 @@ namespace LoxSharp.Lexing
         BangEqual, Comma, Colon, Semicolon, Dot, DashGreater,
         StringLit, NumberLit, Identifier,
 
-        And, Break, Const, Class, Continue, Else, Enum, False, For, Fun, If, In, Not, Nil, Or, Return,
+        And, Base, Break, Const, Class, Continue, Else, Enum, False, For, Fun, If, In, Not, Nil, Or, Return,
         This, True, Var, While,
 
         Eof

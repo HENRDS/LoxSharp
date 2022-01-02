@@ -28,7 +28,7 @@ Chapter 2:
 - [X] Functions
 - [X] Resolving and Binding
 - [X] Classes
-- [ ] Inheritance
+- [X] Inheritance
 
 Chapter 3:
 

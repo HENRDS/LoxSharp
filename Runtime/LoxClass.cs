@@ -3,6 +3,7 @@ namespace LoxSharp.Runtime;
 public class LoxClass: LoxObject, ILoxCallable
 {
     public string Name {get;}
+    public LoxClass? Base {get;}
     private readonly Dictionary<string, LoxFunction> methods;
 
     public int Arity 
@@ -16,9 +17,10 @@ public class LoxClass: LoxObject, ILoxCallable
         }
     }
 
-    public LoxClass(string name, Dictionary<string, LoxFunction> methods)
+    public LoxClass(string name, LoxClass? @base, Dictionary<string, LoxFunction> methods)
     {
         Name = name;
+        Base = @base;
         this.methods = methods;
     }
 
@@ -27,7 +29,18 @@ public class LoxClass: LoxObject, ILoxCallable
         return Name;
     }
 
-    public LoxFunction? FindMethod(string name) => methods.GetValueOrDefault(name);
+    public LoxFunction? FindMethod(string name) 
+    {
+        if (methods.TryGetValue(name, out var meth))
+        {
+            return meth;
+        }
+        if (Base is not null)
+        {
+            return Base.FindMethod(name);
+        }
+        return null;
+    }
 
     public object? Call(Interpreter interpreter, params object?[] arguments) => Call(interpreter, arguments.AsEnumerable());
 

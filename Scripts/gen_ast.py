@@ -144,6 +144,11 @@ def build_expr() -> AstBuilder:
         Prop("Parameters", "List<Token>"),
         Prop("Body", "Expr")
     )
+    builder.add_node(
+        "Base", 
+        Prop("Keyword", "Token"),
+        Prop("Name", "Token")
+    )
     builder.add_node("Grouping", Prop("Expr", "Expr"))
     builder.add_node("Variable", Prop("Name", "Token"))
     builder.add_node("Literal", Prop("Value", "object?"))
@@ -190,6 +195,7 @@ def build_stmt():
     builder.add_node(
         "Class",
         Prop("Name", "Token"),
+        Prop("Base", "Expr.Variable?"),
         Prop("Methods", "List<Stmt.Function>")
     )
 

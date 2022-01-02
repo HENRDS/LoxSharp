@@ -311,13 +311,35 @@ namespace LoxSharp.Runtime
 
         public void VisitClass(Stmt.Class @class)
         {
+            object? baseClass = null;
+            if (@class.Base is not null)
+            {
+                baseClass = Evaluate(@class.Base);
+                if (baseClass is not LoxClass)
+                {
+                    throw new RuntimeException(@class.Base.Name, "Base class must be a class");
+                }
+            }
+            CurrentScope.Define(@class.Name, null);
+            if (@class.Base is not null)
+            {
+                CurrentScope = new Scope(CurrentScope);
+                CurrentScope.SafeDefine("base", baseClass);
+            }
             Dictionary<string, LoxFunction> methods = new();
             foreach(Stmt.Function meth in @class.Methods) 
             {
                 var fun = new LoxFunction(meth, CurrentScope, meth.Name.Lexeme == "init");
                 methods[meth.Name.Lexeme] = fun;
             }
-            CurrentScope.Define(@class.Name, new LoxClass(@class.Name.Lexeme, methods));
+            var cls = new LoxClass(@class.Name.Lexeme, (LoxClass?)baseClass, methods);    
+            if (@class.Base is not null)
+            {
+                CurrentScope = CurrentScope.Parent!;
+            }
+            CurrentScope.Assign(@class.Name, cls);
+
+
         }
 
         public object? VisitSet(Expr.Set set)
@@ -335,6 +357,19 @@ namespace LoxSharp.Runtime
         public object? VisitThis(Expr.This @this)
         {
             return LookupName(@this.Keyword, @this);
+        }
+
+        public object? VisitBase(Expr.Base @base)
+        {
+            int distance =  Locals[@base];
+            var baseClass = (LoxClass)CurrentScope.GetAt("base", distance)!;
+            var instance = (LoxInstance)CurrentScope.GetAt("this", distance - 1)!;
+            LoxFunction? method = baseClass.FindMethod(@base.Name.Lexeme);
+            if (method is null) 
+            {
+                throw new RuntimeException(@base.Name, $"Undefined method {@base.Name.Lexeme}");
+            }
+            return method.Bind(instance);
         }
     }
 }

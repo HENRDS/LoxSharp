@@ -49,5 +49,14 @@ namespace LoxSharp.Parsing
             throw new NotImplementedException();
         }
 
+        public string VisitSet(Expr.Set set)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string VisitThis(Expr.This @this)
+        {
+            return "this";
+        }
     }
 }

@@ -9,11 +9,19 @@ namespace LoxSharp.Runtime
     {
         public int Arity => Declaration.Parameters.Count;
         public Stmt.Function Declaration { get; }
-        public Scope Closure {get;}
-        public LoxFunction(Stmt.Function declaration, Scope closure)
+        public Scope Closure { get; }
+        public bool IsInitializer { get; }
+        public LoxFunction(Stmt.Function declaration, Scope closure, bool isInitializer)
         {
             Declaration = declaration;
             Closure = closure;
+            IsInitializer = isInitializer;
+        }
+        public LoxFunction Bind(LoxInstance instance)
+        {
+            Scope scope = new(Closure);
+            scope.SafeDefine("this", instance);
+            return new LoxFunction(Declaration, scope, IsInitializer);
         }
         public object? Call(Interpreter interpreter, params object?[] arguments) => Call(interpreter, arguments.AsEnumerable());
 
@@ -36,10 +44,14 @@ namespace LoxSharp.Runtime
                 {
                     interpreter.ExecuteBlock(new List<Stmt> {Declaration.Body}, functionScope);
                 }
+                if (IsInitializer)
+                    return Closure.GetAt("this", 0);
                 return null;
             }
             catch(ReturnException e) 
             {
+                if (IsInitializer)
+                    return Closure.GetAt("this", 0);
                 return e.Value;
             }
         }

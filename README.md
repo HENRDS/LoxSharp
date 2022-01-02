@@ -15,31 +15,6 @@ fun(x) -> x + 1;
 ```
 x if x > 0 else -1;
 ```
-
-### Records instead of classes
-
-Classes cannot have methods, only properties. Classes also have an implicit constructor that receives the properties as named parameters.
-e.g.:
-```
-class Person {
-    name: str;
-}
-fun greet(person) {
-    return "Hello " + person.name + "!";
-}
-greet(Person(name: "Steve"));
-```
-
-Thus, there's no `this` (or `self`) and the the following is invalid:
-```
-class Person {
-    name: str;
-    fun greet() {
-        return "Hello " + this.name + "!";
-    }
-}
-Person(name: "Steve").greet();
-```
 ## To do
 
 Chapter 2:
@@ -50,10 +25,10 @@ Chapter 2:
 - [X] Evaluating Expressions
 - [X] Statements and State
 - [X] Control Flow
-- [ ] Functions
-- [ ] Resolving and Binding
-- [ ] Classes (Records)
-- [ ] Inheritance (maybe)
+- [X] Functions
+- [X] Resolving and Binding
+- [X] Classes
+- [ ] Inheritance
 
 Chapter 3:
 

@@ -82,9 +82,10 @@ namespace LoxSharp.Runtime
         {
             ScopeAt(distance).values[name.Lexeme] = value;
         }
-        public object? GetAt(Token name, int distance)
+        public object? GetAt(string name, int distance)
         {
-            return ScopeAt(distance).values[name.Lexeme];
+            return ScopeAt(distance).values[name];
         }
+        public object? GetAt(Token name, int distance) =>  GetAt(name.Lexeme, distance);
     }
 }

@@ -9,7 +9,7 @@ namespace LoxSharp.Lexing
         StringLit, NumberLit, Identifier,
 
         And, Break, Const, Class, Continue, Else, Enum, False, For, Fun, If, In, Not, Nil, Or, Return,
-        True, Var, While,
+        This, True, Var, While,
 
         Eof
     }

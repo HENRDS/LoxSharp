@@ -124,7 +124,11 @@ namespace LoxSharp.Runtime
 
         public object? VisitGet(Expr.Get get)
         {
-            throw new System.NotImplementedException();
+            object? obj = Evaluate(get.Object);
+            if (obj is LoxInstance instance){
+                return instance.Get(get.Name);
+            }
+            throw new RuntimeException(get.Name, "Only instances have properties");
         }
 
         public object? VisitGrouping(Expr.Grouping grouping) => Evaluate(grouping.Expr);
@@ -293,7 +297,7 @@ namespace LoxSharp.Runtime
 
         public void VisitFunction(Stmt.Function function)
         {
-            LoxFunction callable = new(function, new Scope(CurrentScope));
+            LoxFunction callable = new(function, new Scope(CurrentScope), false);
             CurrentScope.Define(function.Name, callable);
         }
 
@@ -303,6 +307,34 @@ namespace LoxSharp.Runtime
             if (@return.Value is not null)
                 value = Evaluate(@return.Value);  
             throw new ReturnException(value);
+        }
+
+        public void VisitClass(Stmt.Class @class)
+        {
+            Dictionary<string, LoxFunction> methods = new();
+            foreach(Stmt.Function meth in @class.Methods) 
+            {
+                var fun = new LoxFunction(meth, CurrentScope, meth.Name.Lexeme == "init");
+                methods[meth.Name.Lexeme] = fun;
+            }
+            CurrentScope.Define(@class.Name, new LoxClass(@class.Name.Lexeme, methods));
+        }
+
+        public object? VisitSet(Expr.Set set)
+        {
+            object? obj = Evaluate(set.Object);
+            if (obj is LoxInstance instance)
+            {
+                object? value = Evaluate(set.Value);
+                instance.Set(set.Name, value);
+                return value;
+            }
+            throw new RuntimeException(set.Name, "Only instances have properties");
+        }
+
+        public object? VisitThis(Expr.This @this)
+        {
+            return LookupName(@this.Keyword, @this);
         }
     }
 }

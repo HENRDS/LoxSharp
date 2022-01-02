@@ -92,6 +92,8 @@ namespace LoxSharp.Parsing
         {
             try 
             {
+                if (Match(TokenType.Class))
+                    return ClassDecl();
                 if (Match(TokenType.Var))
                     return VarDecl();
                 if (Match(TokenType.Fun))
@@ -131,6 +133,7 @@ namespace LoxSharp.Parsing
         }
         private Stmt ReturnStmt() 
         {
+            Token kwd = Peek(-1);
             if (!isInsideFunction)
                 throw Error("Cannot call return outside a function");
             Expr? expr = null;
@@ -139,7 +142,19 @@ namespace LoxSharp.Parsing
                 expr = Expression();
             }
             Consume(TokenType.Semicolon);
-            return new Stmt.Return(expr);
+            return new Stmt.Return(kwd, expr);
+        }
+        private Stmt ClassDecl()
+        {
+            Token name = Consume(TokenType.Identifier);
+            Consume(TokenType.LeftBrace);
+            List<Stmt.Function> methods = new();
+            while (!Check(TokenType.RightBrace) && !IsAtEnd)
+            {
+                methods.Add((Stmt.Function)FunDecl());
+            }
+            Consume(TokenType.RightBrace);
+            return new Stmt.Class(name, methods);
         }
         private Stmt FunDecl() 
         {
@@ -161,7 +176,7 @@ namespace LoxSharp.Parsing
             Consume(TokenType.RightParen);
             bool isInsideFunction = this.isInsideFunction;
             try
-            {
+            { 
                 this.isInsideFunction = true;
                 Stmt body = BlockStmt();
                 return new Stmt.Function(name, parameters, body); 
@@ -314,6 +329,10 @@ namespace LoxSharp.Parsing
                 if (lhs is Expr.Variable var) 
                 {
                     return new Expr.Assign(var.Name, value);
+                } 
+                else if (lhs is Expr.Get get) 
+                {
+                    return new Expr.Set(get.Object, get.Name, value);
                 }
                 throw Error("Invalid assignment target", equals);
             }
@@ -415,12 +434,17 @@ namespace LoxSharp.Parsing
         }
         private Expr Call()
         {
-            var expr = Get();
+            var expr = Primary();
             while (true) 
             {
                 if (Match(TokenType.LeftParen))
                 {
                     expr = FinishCall(expr);   
+                }
+                else if (Match(TokenType.Dot))
+                {
+                    Token name = Consume(TokenType.Identifier);
+                    expr = new Expr.Get(expr, name);
                 }
                 else
                 {
@@ -428,13 +452,6 @@ namespace LoxSharp.Parsing
                 }
             }
             return expr;
-        }
-        private Expr Get()
-        {
-            var lhs = Primary();
-            while(Match(TokenType.Dot))
-                lhs = new Expr.Get(lhs, Consume(TokenType.Identifier));
-            return lhs;
         }
         private Expr Primary()
         {
@@ -450,6 +467,8 @@ namespace LoxSharp.Parsing
                 Consume(TokenType.RightParen);
                 return new Expr.Grouping(body);
             }
+            if (Match(TokenType.This))
+                return new Expr.This(Peek(-1));
             throw Error("Expected expression");
 
         }

@@ -4,13 +4,30 @@ using LoxSharp.Parsing;
 
 namespace LoxSharp.Runtime
 {
+
     public class Resolver : IExprVisitor, IStmtVisitor
     {
+        private enum FunctionType 
+        {
+            None,
+            Function,
+            Initializer,
+            Method
+        }
+        private enum ClassType 
+        {
+            None,
+            Class
+        }
         private readonly Stack<Dictionary<string, bool>> scopes;
         private readonly Interpreter Interpreter;
+        private FunctionType functionType;
+        private ClassType classType;
         public Resolver(Interpreter interpreter)
         {
             Interpreter = interpreter;
+            functionType = FunctionType.None;
+            classType = ClassType.None;
             scopes = new();
         }
         private void BeginScope() => scopes.Push(new Dictionary<string, bool>());
@@ -29,8 +46,10 @@ namespace LoxSharp.Runtime
                 }
             }
         }
-        private void ResolveFunction(Stmt.Function function) 
+        private void ResolveFunction(Stmt.Function function, FunctionType type) 
         {
+            FunctionType enclosingFunctionType = functionType;
+            functionType = type;
             BeginScope();
             foreach (var param in function.Parameters)
             {
@@ -39,6 +58,7 @@ namespace LoxSharp.Runtime
             }
             Resolve(function.Body);
             EndScope();
+            functionType = enclosingFunctionType;
         }
         private void Declare(Token name) 
         {
@@ -118,7 +138,7 @@ namespace LoxSharp.Runtime
         {
             Declare(function.Name);
             Define(function.Name);
-            ResolveFunction(function);
+            ResolveFunction(function, FunctionType.Function);
         }
 
         public void VisitGet(Expr.Get get)
@@ -169,7 +189,11 @@ namespace LoxSharp.Runtime
         public void VisitReturn(Stmt.Return @return)
         {
             if (@return.Value is not null)
+            {
+                if (functionType == FunctionType.Initializer)
+                    throw new RuntimeException(@return.Keyword, "Cannot return from object initializer");
                 Resolve(@return.Value);
+            }
         }
 
         public void VisitUnary(Expr.Unary unary)
@@ -200,6 +224,36 @@ namespace LoxSharp.Runtime
             BeginScope();
             Resolve(@while.Body);
             EndScope();
+        }
+
+        public void VisitClass(Stmt.Class @class)
+        {
+            ClassType enclosingClassType = classType;
+            classType = ClassType.Class;
+            Declare(@class.Name);
+            Define(@class.Name);
+            BeginScope();
+            scopes.Peek()["this"] = true;
+            foreach(Stmt.Function meth in @class.Methods)
+            {
+                FunctionType declaration = meth.Name.Lexeme == "init" ? FunctionType.Initializer : FunctionType.Method;
+                ResolveFunction(meth, declaration);
+            }
+            EndScope();
+            classType = enclosingClassType;
+        }
+
+        public void VisitSet(Expr.Set set)
+        {
+            Resolve(set.Value);
+            Resolve(set.Object);
+        }
+
+        public void VisitThis(Expr.This @this)
+        {
+            if (classType == ClassType.None)
+                throw new RuntimeException(@this.Keyword, "Can't use this outside class");
+            ResolveLocal(@this, @this.Keyword);
         }
     }
 

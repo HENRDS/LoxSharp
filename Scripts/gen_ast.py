@@ -129,6 +129,16 @@ def build_expr() -> AstBuilder:
         Prop("Name", "Token")
     )
     builder.add_node(
+        "Set",
+        Prop("Object", "Expr"),
+        Prop("Name", "Token"),
+        Prop("Value", "Expr")
+    )
+    builder.add_node(
+        "This",
+        Prop("Keyword", "Token")
+    )
+    builder.add_node(
         "Lambda",
         Prop("Keyword", "Token"),
         Prop("Parameters", "List<Token>"),
@@ -166,12 +176,21 @@ def build_stmt():
     )
     builder.add_node("Break", Prop("Condition", "Expr?"))
     builder.add_node("Continue", Prop("Condition", "Expr?"))
-    builder.add_node("Return", Prop("Value", "Expr?"))
+    builder.add_node(
+        "Return", 
+        Prop("Keyword", "Token"),
+        Prop("Value", "Expr?")
+    )
     builder.add_node(
         "Function",
         Prop("Name", "Token"),
         Prop("Parameters", "List<Token>"),
         Prop("Body", "Stmt"),
+    )
+    builder.add_node(
+        "Class",
+        Prop("Name", "Token"),
+        Prop("Methods", "List<Stmt.Function>")
     )
 
     return builder
